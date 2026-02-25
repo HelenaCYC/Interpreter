@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import React from 'react';
 import { useTerms, useCategories } from '../hooks/useData';
-import { Search, Volume2, AlertTriangle, Plus, X } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { supabase } from '../db/database';
+import { Search, AlertTriangle, Plus, X } from 'lucide-react';
 import { Term } from '../types';
 
 export default function Glossary() {
@@ -15,15 +15,13 @@ export default function Glossary() {
   const handleReport = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!reportingTerm) return;
-    
+
     const formData = new FormData(e.currentTarget);
     const text = formData.get('report_text');
 
-    await fetch('/api/reports', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ term_id: reportingTerm.id, report_text: text }),
-    });
+    await supabase
+      .from('reported_errors')
+      .insert({ term_id: reportingTerm.id, report_text: text });
 
     setReportingTerm(null);
     alert('Report submitted. Thank you!');
@@ -35,17 +33,23 @@ export default function Glossary() {
     const data = Object.fromEntries(formData);
 
     try {
-      const res = await fetch('/api/terms', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      
-      if (res.ok) {
-        const newId = (await res.json()).id;
-        // Optimistically add to list (re-fetch would be better in production)
+      const { data: newData, error } = await supabase
+        .from('terms')
+        .insert({
+          english: data.english,
+          cantonese: data.cantonese,
+          pronunciation: data.pronunciation,
+          category_id: data.category_id,
+          example_english: data.example_english,
+          example_cantonese: data.example_cantonese,
+          difficulty: data.difficulty || 'Medium',
+        })
+        .select('id')
+        .single();
+
+      if (!error && newData) {
         const categoryName = categories.find(c => c.id.toString() === data.category_id)?.name;
-        const newTerm: any = { ...data, id: newId, category_name: categoryName, is_hard: 0 };
+        const newTerm: any = { ...data, id: newData.id, category_name: categoryName, is_hard: 0 };
         setTerms(prev => [newTerm, ...prev]);
         setIsAdding(false);
         alert('Term added successfully!');
@@ -76,7 +80,7 @@ export default function Glossary() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <button 
+          <button
             onClick={() => setIsAdding(true)}
             className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 px-4"
           >
@@ -117,7 +121,7 @@ export default function Glossary() {
                       {term.example_cantonese}
                     </td>
                     <td className="p-4 text-right">
-                      <button 
+                      <button
                         onClick={() => setReportingTerm(term)}
                         className="text-slate-400 hover:text-red-500 transition-colors"
                         title="Report Error"
@@ -140,7 +144,6 @@ export default function Glossary() {
         </div>
       )}
 
-      {/* Add Term Modal */}
       {isAdding && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-6 max-w-2xl w-full shadow-xl max-h-[90vh] overflow-y-auto">
@@ -150,7 +153,7 @@ export default function Glossary() {
                 <X className="w-6 h-6" />
               </button>
             </div>
-            
+
             <form onSubmit={handleAddTerm} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -218,7 +221,6 @@ export default function Glossary() {
         </div>
       )}
 
-      {/* Report Modal */}
       {reportingTerm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-xl">

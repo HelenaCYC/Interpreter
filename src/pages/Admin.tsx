@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import React from 'react';
 import { useCategories } from '../hooks/useData';
+import { supabase } from '../db/database';
 import { Report } from '../types';
 
 export default function Admin() {
@@ -10,9 +11,20 @@ export default function Admin() {
 
   useEffect(() => {
     if (activeTab === 'reports') {
-      fetch('/api/reports')
-        .then(res => res.json())
-        .then(setReports);
+      supabase
+        .from('reported_errors')
+        .select(`*, terms (english, cantonese)`)
+        .order('timestamp', { ascending: false })
+        .then(({ data, error }) => {
+          if (!error && data) {
+            const formatted = data.map((report: any) => ({
+              ...report,
+              english: report.terms?.english,
+              cantonese: report.terms?.cantonese,
+            }));
+            setReports(formatted);
+          }
+        });
     }
   }, [activeTab]);
 
@@ -22,13 +34,19 @@ export default function Admin() {
     const data = Object.fromEntries(formData);
 
     try {
-      const res = await fetch('/api/terms', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      
-      if (res.ok) {
+      const { error } = await supabase
+        .from('terms')
+        .insert({
+          english: data.english,
+          cantonese: data.cantonese,
+          pronunciation: data.pronunciation,
+          category_id: data.category_id,
+          example_english: data.example_english,
+          example_cantonese: data.example_cantonese,
+          difficulty: data.difficulty || 'Medium',
+        });
+
+      if (!error) {
         alert('Term added successfully!');
         (e.target as HTMLFormElement).reset();
       } else {

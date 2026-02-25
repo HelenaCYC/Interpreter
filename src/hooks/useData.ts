@@ -1,19 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Term, Category, Report } from '../types';
+import { Term, Category } from '../types';
+import { supabase } from '../db/database';
 
 export function useCategories() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/categories')
-      .then(res => res.json())
-      .then(data => {
-        setCategories(data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
+    supabase
+      .from('categories')
+      .select('*')
+      .order('name')
+      .then(({ data, error }) => {
+        if (!error && data) setCategories(data);
         setLoading(false);
       });
   }, []);
@@ -26,30 +25,40 @@ export function useTerms(categoryId?: number | string, search?: string) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const params = new URLSearchParams();
-    if (categoryId) params.append('category_id', categoryId.toString());
-    if (search) params.append('search', search);
+    let query = supabase
+      .from('terms')
+      .select('*, category_name:categories(name)');
 
-    fetch(`/api/terms?${params.toString()}`)
-      .then(res => res.json())
-      .then(data => {
-        setTerms(data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
+    if (categoryId) {
+      query = query.eq('category_id', categoryId);
+    }
+
+    if (search) {
+      query = query.or(`english.ilike.%${search}%,cantonese.ilike.%${search}%`);
+    }
+
+    query.then(({ data, error }) => {
+      if (!error && data) {
+        const formatted = data.map((term: any) => ({
+          ...term,
+          category_name: term.category_name?.name || null,
+        }));
+        setTerms(formatted);
+      }
+      setLoading(false);
+    });
   }, [categoryId, search]);
 
   const toggleHard = async (id: number, isHard: boolean) => {
     try {
-      await fetch(`/api/terms/${id}/toggle-hard`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ is_hard: isHard }),
-      });
-      setTerms(prev => prev.map(t => t.id === id ? { ...t, is_hard: isHard ? 1 : 0 } : t));
+      const { error } = await supabase
+        .from('terms')
+        .update({ is_hard: isHard })
+        .eq('id', id);
+
+      if (!error) {
+        setTerms(prev => prev.map(t => t.id === id ? { ...t, is_hard: isHard ? 1 : 0 } : t));
+      }
     } catch (err) {
       console.error(err);
     }
