@@ -7,7 +7,8 @@ import { Term } from '../types';
 
 export default function Glossary() {
   const [search, setSearch] = useState('');
-  const { terms, loading, setTerms } = useTerms(undefined, search);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const { terms, loading, setTerms } = useTerms(selectedCategory || undefined, search);
   const { categories } = useCategories();
   const [reportingTerm, setReportingTerm] = useState<Term | null>(null);
   const [isAdding, setIsAdding] = useState(false);
@@ -69,7 +70,17 @@ export default function Glossary() {
           <h2 className="text-2xl font-bold text-slate-800">Glossary</h2>
           <p className="text-slate-500">Search and browse all medical terms</p>
         </div>
-        <div className="flex gap-2 w-full md:w-auto">
+        <div className="flex flex-wrap gap-2 w-full md:w-auto">
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-slate-700"
+          >
+            <option value="">All Categories</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
           <div className="relative flex-1 md:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
             <input
