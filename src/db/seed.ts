@@ -17,20 +17,16 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 async function seedDatabase() {
   console.log('Checking if database needs seeding...');
 
-  const { data: existingTerms, error: checkError } = await supabase
+  const { count, error: checkError } = await supabase
     .from('terms')
-    .select('id', { count: 'exact', head: true });
+    .select('*', { count: 'exact', head: true });
 
   if (checkError) {
     console.error('Error checking existing terms:', checkError);
     return;
   }
 
-  const { count } = await supabase
-    .from('terms')
-    .select('*', { count: 'exact', head: true });
-
-  if (count && count > 0) {
+  if (count !== null && count > 0) {
     console.log(`Database already has ${count} terms. Skipping seed.`);
     return;
   }
