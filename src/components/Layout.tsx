@@ -20,16 +20,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <Onboarding />
       {/* Mobile Header */}
       <header className="md:hidden bg-white border-b p-4 flex items-center justify-between sticky top-0 z-10">
-        <h1 className="text-xl font-bold text-blue-600">MediLingo</h1>
+        <h1 className="text-xl font-bold text-blue-600">Canto Lingo</h1>
       </header>
 
       {/* Sidebar (Desktop) */}
       <aside className="hidden md:flex flex-col w-64 bg-white border-r h-screen sticky top-0">
         <div className="p-6">
           <h1 className="text-2xl font-bold text-blue-600 flex items-center gap-2">
-            <span className="text-3xl">⚕️</span> MediLingo
+            <span className="text-3xl">⚕️</span> Canto Lingo
           </h1>
-          <p className="text-xs text-slate-500 mt-2">Medical Cantonese Learning</p>
+          <p className="text-xs text-slate-500 mt-2">Cantonese Interpreter glossary learning</p>
         </div>
         <nav className="flex-1 px-4 space-y-1">
           {navItems.map((item) => (

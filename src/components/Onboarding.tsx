@@ -40,7 +40,7 @@ export default function Onboarding() {
           className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl"
         >
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-blue-600 mb-2">Welcome to MediLingo</h2>
+            <h2 className="text-3xl font-bold text-blue-600 mb-2">Welcome to Canto Lingo</h2>
             <p className="text-slate-500">Choose your primary learning goal to get started.</p>
           </div>
 
