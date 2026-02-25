@@ -1,6 +1,6 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
-import db from "./src/db/database";
+import { supabase } from "./src/db/database";
 import path from "path";
 
 async function startServer() {
@@ -10,41 +10,50 @@ async function startServer() {
   app.use(express.json());
 
   // API Routes
-  
+
   // Get all categories
-  app.get("/api/categories", (req, res) => {
+  app.get("/api/categories", async (req, res) => {
     try {
-      const categories = db.prepare("SELECT * FROM categories").all();
-      res.json(categories);
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name');
+
+      if (error) throw error;
+      res.json(data);
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Failed to fetch categories" });
     }
   });
 
   // Get terms (optional filter by category)
-  app.get("/api/terms", (req, res) => {
+  app.get("/api/terms", async (req, res) => {
     try {
       const { category_id, search } = req.query;
-      let query = "SELECT t.*, c.name as category_name FROM terms t LEFT JOIN categories c ON t.category_id = c.id";
-      const params: any[] = [];
-      const conditions: string[] = [];
+
+      let query = supabase
+        .from('terms')
+        .select('*, category_name:categories(name)');
 
       if (category_id) {
-        conditions.push("t.category_id = ?");
-        params.push(category_id);
+        query = query.eq('category_id', category_id);
       }
 
       if (search) {
-        conditions.push("(t.english LIKE ? OR t.cantonese LIKE ?)");
-        params.push(`%${search}%`, `%${search}%`);
+        query = query.or(`english.ilike.%${search}%,cantonese.ilike.%${search}%`);
       }
 
-      if (conditions.length > 0) {
-        query += " WHERE " + conditions.join(" AND ");
-      }
+      const { data, error } = await query;
 
-      const terms = db.prepare(query).all(...params);
-      res.json(terms);
+      if (error) throw error;
+
+      const formatted = data.map(term => ({
+        ...term,
+        category_name: term.category_name?.name || null
+      }));
+
+      res.json(formatted);
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Failed to fetch terms" });
@@ -52,57 +61,93 @@ async function startServer() {
   });
 
   // Add a new term
-  app.post("/api/terms", (req, res) => {
+  app.post("/api/terms", async (req, res) => {
     try {
       const { english, cantonese, pronunciation, category_id, example_english, example_cantonese, difficulty } = req.body;
-      const stmt = db.prepare(`
-        INSERT INTO terms (english, cantonese, pronunciation, category_id, example_english, example_cantonese, difficulty)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `);
-      const info = stmt.run(english, cantonese, pronunciation, category_id, example_english, example_cantonese, difficulty || 'Medium');
-      res.json({ id: info.lastInsertRowid });
+
+      const { data, error } = await supabase
+        .from('terms')
+        .insert({
+          english,
+          cantonese,
+          pronunciation,
+          category_id,
+          example_english,
+          example_cantonese,
+          difficulty: difficulty || 'Medium'
+        })
+        .select('id')
+        .single();
+
+      if (error) throw error;
+      res.json({ id: data.id });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Failed to add term" });
     }
   });
 
-  // Toggle difficulty (mark as hard) - In a real app this would be user-specific
-  app.post("/api/terms/:id/toggle-hard", (req, res) => {
+  // Toggle difficulty (mark as hard)
+  app.post("/api/terms/:id/toggle-hard", async (req, res) => {
     try {
       const { id } = req.params;
       const { is_hard } = req.body;
-      const stmt = db.prepare("UPDATE terms SET is_hard = ? WHERE id = ?");
-      stmt.run(is_hard ? 1 : 0, id);
+
+      const { error } = await supabase
+        .from('terms')
+        .update({ is_hard })
+        .eq('id', id);
+
+      if (error) throw error;
       res.json({ success: true });
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Failed to update term" });
     }
   });
 
   // Report an error
-  app.post("/api/reports", (req, res) => {
+  app.post("/api/reports", async (req, res) => {
     try {
       const { term_id, report_text } = req.body;
-      const stmt = db.prepare("INSERT INTO reported_errors (term_id, report_text) VALUES (?, ?)");
-      stmt.run(term_id, report_text);
+
+      const { error } = await supabase
+        .from('reported_errors')
+        .insert({ term_id, report_text });
+
+      if (error) throw error;
       res.json({ success: true });
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Failed to report error" });
     }
   });
 
   // Get reports
-  app.get("/api/reports", (req, res) => {
+  app.get("/api/reports", async (req, res) => {
     try {
-      const reports = db.prepare(`
-        SELECT r.*, t.english, t.cantonese 
-        FROM reported_errors r 
-        LEFT JOIN terms t ON r.term_id = t.id
-        ORDER BY r.timestamp DESC
-      `).all();
-      res.json(reports);
+      const { data, error } = await supabase
+        .from('reported_errors')
+        .select(`
+          *,
+          terms (
+            english,
+            cantonese
+          )
+        `)
+        .order('timestamp', { ascending: false });
+
+      if (error) throw error;
+
+      const formatted = data.map(report => ({
+        ...report,
+        english: report.terms?.english,
+        cantonese: report.terms?.cantonese
+      }));
+
+      res.json(formatted);
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Failed to fetch reports" });
     }
   });
