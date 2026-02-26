@@ -25,7 +25,7 @@ export default function Home() {
     <div className="space-y-8">
       <section className="bg-blue-600 rounded-2xl p-8 text-white shadow-lg relative overflow-hidden">
         <div className="relative z-10">
-          <h2 className="text-3xl font-bold mb-2">Welcome back!</h2>
+          <h1 className="text-3xl font-bold mb-2">Cantonese to English Vocabulary & Quiz</h1>
           <p className="text-blue-100 mb-6 max-w-md">
             Ready to practice your medical Cantonese? Start with your daily flashcards or pick a category below.
           </p>
@@ -41,7 +41,7 @@ export default function Home() {
       </section>
 
       <section>
-        <h3 className="text-xl font-bold text-slate-800 mb-4">Browse Categories</h3>
+        <h2 className="text-xl font-bold text-slate-800 mb-4">Browse Categories</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {categories.map((cat, i) => {
             const Icon = getIcon(cat.name);

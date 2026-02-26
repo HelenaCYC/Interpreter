@@ -76,7 +76,7 @@ export default function Quiz() {
           {Math.round((score / questions.length) * 100)}%
         </div>
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">Quiz Complete!</h2>
+          <h1 className="text-2xl font-bold text-slate-800">Quiz Complete!</h1>
           <p className="text-slate-500">You got {score} out of {questions.length} correct.</p>
         </div>
         <button
@@ -106,8 +106,8 @@ export default function Quiz() {
       </div>
 
       <div className="bg-white p-8 rounded-2xl shadow-sm border text-center space-y-6">
-        <h3 className="text-slate-400 uppercase tracking-wider text-sm font-semibold">Translate this term</h3>
-        <h2 className="text-3xl font-bold text-slate-800">{currentQuestion.term.english}</h2>
+        <h2 className="text-slate-400 uppercase tracking-wider text-sm font-semibold">Translate this term</h2>
+        <h1 className="text-3xl font-bold text-slate-800">{currentQuestion.term.english}</h1>
         
         <div className="grid grid-cols-1 gap-3 mt-8">
           {currentQuestion.options.map((option: string, idx: number) => {

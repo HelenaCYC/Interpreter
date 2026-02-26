@@ -40,7 +40,7 @@ export default function Flashcards() {
   return (
     <div className="max-w-2xl mx-auto space-y-8 py-8 px-4">
       <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold text-slate-800">Study Mode</h2>
+        <h1 className="text-2xl font-bold text-slate-800">Study Mode</h1>
         <p className="text-slate-500">Card {currentIndex + 1} of {studySet.length}</p>
       </div>
 

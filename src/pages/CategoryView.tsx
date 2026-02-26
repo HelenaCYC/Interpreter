@@ -21,7 +21,7 @@ export default function CategoryView({ params }: { params: { id: string } }) {
           </button>
         </Link>
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">{category?.name || 'Category'}</h2>
+          <h1 className="text-2xl font-bold text-slate-800">{category?.name || 'Category'}</h1>
           <p className="text-slate-500">{terms.length} terms</p>
         </div>
       </div>
