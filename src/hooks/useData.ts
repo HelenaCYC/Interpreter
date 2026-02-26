@@ -37,6 +37,8 @@ export function useTerms(categoryId?: number | string, search?: string) {
       query = query.or(`english.ilike.%${search}%,cantonese.ilike.%${search}%`);
     }
 
+    query = query.order('english', { ascending: true });
+
     query.then(({ data, error }) => {
       if (!error && data) {
         const formatted = data.map((term: any) => ({
